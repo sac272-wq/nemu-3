@@ -49,6 +49,40 @@ export function categoryBreakdown(transactions, month) {
 }
 
 /**
+ * 指定月の日ごとの支出合計 { 日(数値): 金額 }。
+ * exclude(t) が true を返す記録は除外（固定費・返済を外して「普段の出費」を見るため）
+ */
+export function dailyExpenses(transactions, month, exclude = () => false) {
+  const map = {};
+  for (const t of transactions) {
+    if (t.type !== 'expense' || ym(t.date) !== month || exclude(t)) continue;
+    const day = Number(t.date.slice(8, 10));
+    map[day] = (map[day] || 0) + t.amount;
+  }
+  return map;
+}
+
+/** カレンダーのマス目。日曜始まりで、1日より前の空きマスは null */
+export function calendarCells(month) {
+  const [y, m] = month.split('-').map(Number);
+  const firstWeekday = new Date(y, m - 1, 1).getDay();
+  const days = new Date(y, m, 0).getDate();
+  const cells = Array(firstWeekday).fill(null);
+  for (let d = 1; d <= days; d++) cells.push(d);
+  while (cells.length % 7) cells.push(null);
+  return cells;
+}
+
+/**
+ * 出費の濃さ 0〜4。その月で一番使った日を 4 とする。
+ * 平方根をとって、少額の日も薄く色が付くようにしている。
+ */
+export function heatLevel(amount, max) {
+  if (!amount || !max) return 0;
+  return Math.min(4, Math.max(1, Math.ceil(Math.sqrt(amount / max) * 4)));
+}
+
+/**
  * 直近 n ヶ月（今月を除く完了月）の平均収支。データがある月だけで平均する。
  */
 export function averageMonthlyBalance(transactions, currentMonth, n = 3) {

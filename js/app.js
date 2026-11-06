@@ -347,9 +347,70 @@ $('debt-list').addEventListener('click', (e) => {
   }
 });
 
+// ---------- 出費カレンダー ----------
+let calDay = null; // タップして選んだ日
+const isFixed = (t) => Boolean(t.recurringId || t.debtId || t.category === REPAY_CATEGORY);
+const shortYen = (n) => (n >= 10000 ? `${(n / 10000).toFixed(n >= 100000 ? 0 : 1)}万` : n.toLocaleString('ja-JP'));
+
+function renderCalendar() {
+  const exclude = $('cal-exclude').checked ? isFixed : () => false;
+  const daily = calc.dailyExpenses(state.transactions, reportMonth, exclude);
+  const amounts = Object.values(daily);
+  const max = Math.max(0, ...amounts);
+  const todayStr = today();
+  const week = ['日', '月', '火', '水', '木', '金', '土'];
+
+  $('calendar').innerHTML =
+    week.map((w, i) => `<div class="cal-head ${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${w}</div>`).join('') +
+    calc.calendarCells(reportMonth).map((d, i) => {
+      if (d == null) return '<div class="cal-cell empty"></div>';
+      const amt = daily[d] || 0;
+      const dateStr = `${reportMonth}-${String(d).padStart(2, '0')}`;
+      const cls = [
+        'cal-cell', `l${calc.heatLevel(amt, max)}`,
+        i % 7 === 0 ? 'sun' : i % 7 === 6 ? 'sat' : '',
+        dateStr === todayStr ? 'today' : '',
+        d === calDay ? 'selected' : '',
+      ].join(' ');
+      return `<button type="button" class="${cls}" data-day="${d}" aria-label="${d}日 支出${amt}円">
+        <span class="cal-d">${d}</span><span class="cal-amt">${amt ? shortYen(amt) : ''}</span></button>`;
+    }).join('');
+
+  if (amounts.length) {
+    const total = amounts.reduce((a, b) => a + b, 0);
+    const days = calc.calendarCells(reportMonth).filter(Boolean).length;
+    const topDay = Number(Object.keys(daily).find((k) => daily[k] === max));
+    const noSpend = days - amounts.length;
+    $('cal-summary').innerHTML = `合計 <strong>${yen(total)}</strong>・1日平均 ${yen(total / days)}<br>
+      一番使った日は <strong class="neg">${topDay}日（${yen(max)}）</strong>・使わなかった日 <strong class="pos">${noSpend}日</strong>`;
+  } else {
+    $('cal-summary').innerHTML = '<span class="muted">この月の出費はまだないわ</span>';
+  }
+
+  if (calDay) {
+    const dateStr = `${reportMonth}-${String(calDay).padStart(2, '0')}`;
+    const items = state.transactions.filter((t) => t.date === dateStr && t.type === 'expense');
+    $('cal-detail').innerHTML = `<h3>${calDay}日の出費</h3>
+      <ul class="list">${items.length
+        ? items.map((t) => txItem(t).replace('</li>', `${isFixed(t) ? '<span class="muted small badge">固定</span>' : ''}</li>`)).join('')
+        : '<li class="muted">この日は出費なし！えらい！✨</li>'}</ul>`;
+  } else {
+    $('cal-detail').innerHTML = '<p class="muted small">日付をタップすると、その日の明細が見られるわ</p>';
+  }
+}
+$('calendar').addEventListener('click', (e) => {
+  const cell = e.target.closest('[data-day]');
+  if (!cell) return;
+  const d = Number(cell.dataset.day);
+  calDay = calDay === d ? null : d;
+  renderCalendar();
+});
+$('cal-exclude').addEventListener('change', renderCalendar);
+
 // ---------- 分析 ----------
 function renderReport() {
   $('r-month').textContent = `${reportMonth.replace('-', '年')}月`;
+  renderCalendar();
   const rows = calc.categoryBreakdown(state.transactions, reportMonth);
   const total = rows.reduce((s, r) => s + r.amount, 0);
   $('breakdown').innerHTML = rows.length
@@ -368,8 +429,8 @@ function renderReport() {
       <span class="bar-val ${x.balance < 0 ? 'neg' : 'pos'}">${yen(x.balance)}</span></div>`).join('')
     + '<p class="muted small">緑が黒字、赤が赤字の月よ。緑を増やしていこ！</p>';
 }
-$('r-prev').onclick = () => { reportMonth = calc.addMonths(reportMonth, -1); renderReport(); };
-$('r-next').onclick = () => { reportMonth = calc.addMonths(reportMonth, 1); renderReport(); };
+$('r-prev').onclick = () => { reportMonth = calc.addMonths(reportMonth, -1); calDay = null; renderReport(); };
+$('r-next').onclick = () => { reportMonth = calc.addMonths(reportMonth, 1); calDay = null; renderReport(); };
 
 // ---------- 設定 ----------
 function renderSettings() {

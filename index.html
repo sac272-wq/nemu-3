@@ -99,12 +99,25 @@
     <!-- 分析 -->
     <section id="view-report" class="view">
       <div class="card">
-        <h2>支出の内訳</h2>
         <div class="row">
-          <button type="button" class="ghost small" id="r-prev">◀</button>
+          <button type="button" class="ghost small" id="r-prev" aria-label="前の月">◀</button>
           <strong id="r-month"></strong>
-          <button type="button" class="ghost small" id="r-next">▶</button>
+          <button type="button" class="ghost small" id="r-next" aria-label="次の月">▶</button>
         </div>
+        <h2 class="cal-title">出費カレンダー</h2>
+        <label class="check">
+          <input type="checkbox" id="cal-exclude" checked />
+          固定費・借金返済を除く（普段の出費だけ見る）
+        </label>
+        <div class="cal" id="calendar"></div>
+        <div class="cal-legend small muted">
+          少ない <span class="cal-swatch l1"></span><span class="cal-swatch l2"></span><span class="cal-swatch l3"></span><span class="cal-swatch l4"></span> 多い
+        </div>
+        <p id="cal-summary" class="small"></p>
+        <div id="cal-detail"></div>
+      </div>
+      <div class="card">
+        <h2>支出の内訳</h2>
         <div id="breakdown"></div>
       </div>
       <div class="card">
