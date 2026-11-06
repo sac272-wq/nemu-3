@@ -137,3 +137,33 @@ details summary { cursor: pointer; color: var(--accent); font-weight: 600; paddi
   background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px;
   text-align: center; font-size: 14px; max-width: 480px; margin: 0 auto;
 }
+
+/* 出費カレンダー */
+.cal-title { margin-top: 12px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
+.check input { width: auto; margin: 0; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-head { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0; }
+.cal-head.sun, .cal-cell.sun .cal-d { color: #dc2626; }
+.cal-head.sat, .cal-cell.sat .cal-d { color: #2563eb; }
+.cal-cell {
+  aspect-ratio: 1 / 1.1; min-width: 0; padding: 3px 2px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+}
+.cal-cell.empty { border: none; background: none; }
+.cal-d { font-size: 12px; line-height: 1; }
+.cal-amt { font-size: 10px; line-height: 1.1; font-weight: 600; white-space: nowrap; }
+/* 濃いほど出費が多い */
+.l1, .cal-swatch.l1 { background: color-mix(in srgb, var(--neg) 15%, var(--card)); }
+.l2, .cal-swatch.l2 { background: color-mix(in srgb, var(--neg) 35%, var(--card)); }
+.l3, .cal-swatch.l3 { background: color-mix(in srgb, var(--neg) 60%, var(--card)); }
+.l4, .cal-swatch.l4 { background: color-mix(in srgb, var(--neg) 88%, var(--card)); }
+.cal-cell.l3, .cal-cell.l4 { color: #fff; border-color: transparent; }
+.cal-cell.l3 .cal-d, .cal-cell.l4 .cal-d { color: #fff; }
+.cal-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cal-cell.selected { outline: 3px solid var(--text); outline-offset: -3px; }
+.cal-legend { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 8px; }
+.cal-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+#cal-detail h3 { margin-top: 8px; }
+.badge { border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; }

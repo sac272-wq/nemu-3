@@ -92,3 +92,31 @@ test('レシート解析：合計が無ければ¥付き最大値、日付は/�
   assert.equal(r.amount, 150);
   assert.equal(r.date, '2026-10-05');
 });
+
+test('日ごとの支出：固定費を除外でき、収入や他の月は数えない', () => {
+  const t = [
+    tx('expense', 1000, '2026-11-03'), tx('expense', 500, '2026-11-03'),
+    { ...tx('expense', 65000, '2026-11-01'), recurringId: 'r1' },
+    tx('income', 200000, '2026-11-25'), tx('expense', 999, '2026-10-03'),
+  ];
+  assert.deepEqual(calc.dailyExpenses(t, '2026-11'), { 1: 65000, 3: 1500 });
+  assert.deepEqual(calc.dailyExpenses(t, '2026-11', (x) => x.recurringId), { 3: 1500 });
+});
+
+test('カレンダーのマス目：2026年11月は日曜始まりで30日', () => {
+  const cells = calc.calendarCells('2026-11'); // 2026/11/1 は日曜
+  assert.equal(cells[0], 1);
+  assert.equal(cells.filter(Boolean).length, 30);
+  assert.equal(cells.length % 7, 0);
+  const feb = calc.calendarCells('2027-02'); // 2027/2/1 は月曜
+  assert.equal(feb[0], null);
+  assert.equal(feb[1], 1);
+  assert.equal(feb.filter(Boolean).length, 28);
+});
+
+test('出費の濃さ', () => {
+  assert.equal(calc.heatLevel(0, 1000), 0);
+  assert.equal(calc.heatLevel(1000, 1000), 4);
+  assert.equal(calc.heatLevel(10, 1000), 1);
+  assert.ok(calc.heatLevel(500, 1000) >= 2);
+});
