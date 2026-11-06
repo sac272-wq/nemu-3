@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>黒字家計簿</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>黒字家計簿</h1>
+    <span id="month-label" class="muted"></span>
+  </header>
+
+  <main>
+    <!-- ホーム -->
+    <section id="view-home" class="view active">
+      <div class="card hero" id="hero"></div>
+      <div class="card" id="month-card"></div>
+      <div class="card" id="pending-card" hidden></div>
+      <div class="card">
+        <h2>最近の記録</h2>
+        <ul id="recent-list" class="list"></ul>
+      </div>
+    </section>
+
+    <!-- 入力 -->
+    <section id="view-add" class="view">
+      <div class="card">
+        <div class="seg" role="tablist">
+          <button type="button" class="seg-btn active" data-type="expense">支出</button>
+          <button type="button" class="seg-btn" data-type="income">収入</button>
+        </div>
+        <label class="receipt-btn">
+          📷 レシートを撮影して読み取る
+          <input type="file" id="receipt-input" accept="image/*" capture="environment" hidden />
+        </label>
+        <p id="ocr-status" class="muted small" hidden></p>
+        <form id="tx-form">
+          <input type="hidden" id="tx-id" />
+          <label>金額（円）
+            <input type="number" id="tx-amount" inputmode="numeric" min="1" step="1" required />
+          </label>
+          <div class="field-label">カテゴリ</div>
+          <div id="cat-chips" class="chips"></div>
+          <label>日付
+            <input type="date" id="tx-date" required />
+          </label>
+          <label>メモ
+            <input type="text" id="tx-memo" maxlength="60" placeholder="お店の名前など" />
+          </label>
+          <div class="row">
+            <button type="submit" class="primary" id="tx-submit">記録する</button>
+            <button type="button" class="ghost" id="tx-cancel" hidden>キャンセル</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <h2>この月の記録</h2>
+        <div class="row">
+          <button type="button" class="ghost small" id="prev-month">◀</button>
+          <strong id="list-month"></strong>
+          <button type="button" class="ghost small" id="next-month">▶</button>
+        </div>
+        <ul id="tx-list" class="list"></ul>
+      </div>
+    </section>
+
+    <!-- 借金 -->
+    <section id="view-debt" class="view">
+      <div class="card">
+        <h2>借金・ローン</h2>
+        <ul id="debt-list" class="list"></ul>
+        <details id="debt-form-wrap">
+          <summary>＋ 借金を追加</summary>
+          <form id="debt-form">
+            <input type="hidden" id="debt-id" />
+            <label>名前<input type="text" id="debt-name" required placeholder="例：〇〇カード リボ" /></label>
+            <label>残高（円）<input type="number" id="debt-balance" inputmode="numeric" min="0" required /></label>
+            <label>年利（%）<input type="number" id="debt-rate" inputmode="decimal" min="0" max="100" step="0.1" required /></label>
+            <label>毎月の最低返済額（円）<input type="number" id="debt-min" inputmode="numeric" min="0" required /></label>
+            <button type="submit" class="primary">保存</button>
+          </form>
+        </details>
+      </div>
+      <div class="card">
+        <h2>返済プラン比較</h2>
+        <label>毎月返済にまわせる総額（円）
+          <input type="number" id="repay-budget" inputmode="numeric" min="0" />
+        </label>
+        <div id="plan-result"></div>
+      </div>
+    </section>
+
+    <!-- 分析 -->
+    <section id="view-report" class="view">
+      <div class="card">
+        <h2>支出の内訳</h2>
+        <div class="row">
+          <button type="button" class="ghost small" id="r-prev">◀</button>
+          <strong id="r-month"></strong>
+          <button type="button" class="ghost small" id="r-next">▶</button>
+        </div>
+        <div id="breakdown"></div>
+      </div>
+      <div class="card">
+        <h2>月ごとの収支（直近6ヶ月）</h2>
+        <div id="trend"></div>
+      </div>
+    </section>
+
+    <!-- 設定 -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h2>スタート地点</h2>
+        <label>記録を始めた時点の現金・口座残高（円、マイナス可）
+          <input type="number" id="initial-cash" inputmode="numeric" step="1" />
+        </label>
+        <button type="button" class="primary" id="save-initial">保存</button>
+      </div>
+      <div class="card">
+        <h2>固定費・定期収入</h2>
+        <p class="muted small">毎月決まって出入りするお金。月が変わるとホームに「記録する？」が出るわ。</p>
+        <ul id="rec-list" class="list"></ul>
+        <details>
+          <summary>＋ 固定費を追加</summary>
+          <form id="rec-form">
+            <label>種類
+              <select id="rec-type">
+                <option value="expense">支出</option>
+                <option value="income">収入</option>
+              </select>
+            </label>
+            <label>カテゴリ<select id="rec-category"></select></label>
+            <label>金額（円）<input type="number" id="rec-amount" inputmode="numeric" min="1" required /></label>
+            <label>毎月何日<input type="number" id="rec-day" inputmode="numeric" min="1" max="28" value="1" required /></label>
+            <label>メモ<input type="text" id="rec-memo" maxlength="40" placeholder="例：家賃" /></label>
+            <button type="submit" class="primary">追加</button>
+          </form>
+        </details>
+      </div>
+      <div class="card">
+        <h2>バックアップ</h2>
+        <p class="muted small">データはこの端末のブラウザの中だけにあるの。機種変更やブラウザのデータ削除の前に書き出してね。</p>
+        <div class="row">
+          <button type="button" class="ghost" id="export-btn">書き出し</button>
+          <label class="ghost button-like">読み込み<input type="file" id="import-input" accept="application/json" hidden /></label>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button type="button" data-view="home" class="active">🏠<span>ホーム</span></button>
+    <button type="button" data-view="add">✏️<span>記録</span></button>
+    <button type="button" data-view="debt">💳<span>借金</span></button>
+    <button type="button" data-view="report">📊<span>分析</span></button>
+    <button type="button" data-view="settings">⚙️<span>設定</span></button>
+  </nav>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
